@@ -58,6 +58,13 @@
              Deploy into multiple environments (dev, test, prod) using command line tools.
 
     GitHub:  https://github.com/santosh-gh/k8s-11
+    YouTube: https://www.youtube.com/watch?v=ZNHoZ_b85DQ&t=342s
+
+    Part12:  Manual Deployment (AzCLI + Docker + Helm + kustomize + kubectl)
+             Dynamically update the image tag in deploy.yaml         
+             Deploy into multiple environments (dev, test, prod) using Azure Pipeline.
+
+    GitHub:  https://github.com/santosh-gh/k8s-12
     YouTube: https://www.youtube.com/watch?v=VAiR3sNavh0
 
 # Architesture
@@ -124,9 +131,10 @@
 
 # Steps
 
-    1. Infra deployment using AzCLI command line tool
+    1. Infra deployment using AzCLI/Bicep command line tool
+       or run infra pipeline
 
-    2. Build and push images to ACR: Docker Desktop
+    2. Build and push images to ACR: CI Pipeline
 
     3. Install Helm & Kustomize
 
@@ -140,7 +148,7 @@
 
     4. Update Helm Chart Directory to overlay with kustomize     
 
-    5. App deployment        
+    5. App deployment (CD Pipeline)      
 
     6. Validate and Access the application
 
@@ -168,6 +176,11 @@
     # Bicep
     az deployment sub create --location uksouth --template-file ./infra/bicep/main.bicep --parameters ./infra/bicep/main.bicepparam
 
+    OR 
+
+    azcli-infra-pipeline.yml
+    bicep-infra-pipeline.yml
+
     # Connect to cluster
 
     RESOURCE_GROUP="rg-onlinestore-dev-uksouth-001"
@@ -187,29 +200,11 @@
 
 # Docker Build and Push to ACR
 
-    # Log in to ACR
-
-    ACR_NAME="acronlinestoredevuksouth001"
-    az acr login --name $ACR_NAME
-
-    docker images
-
-    # Build and push the Docker images to ACR
-
-    # Order Service
-    docker build -t order ./app/order-service 
-    docker tag order:latest $ACR_NAME.azurecr.io/order:v1
-    docker push $ACR_NAME.azurecr.io/order:v1
-
-    # Product Service
-    docker build -t product ./app/product-service 
-    docker tag product:latest $ACR_NAME.azurecr.io/product:v1
-    docker push $ACR_NAME.azurecr.io/product:v1
-
-    # Store Front Service
-    docker build -t store-front ./app/store-front 
-    docker tag store-front:latest $ACR_NAME.azurecr.io/store-front:v1
-    docker push $ACR_NAME.azurecr.io/store-front:v1    
+    config-pipeline.yaml
+    rabbitmq-pipeline.yaml
+    order-pipeline.yaml
+    product-pipeline.yaml
+    store-front-pipeline.yaml      
 
 # Install Helm 
 
@@ -278,6 +273,13 @@
     kubectl apply -k ./storehelmchart/order/overlays/prod -n prod
     kubectl apply -k ./storehelmchart/product/overlays/prod -n prod
     kubectl apply -k ./storehelmchart/store-front/overlays/prod -n prod
+    
+    config-pipeline.yaml
+    rabbitmq-pipeline.yaml
+    order-pipeline.yaml
+    product-pipeline.yaml
+    store-front-pipeline.yaml 
+
 
 # Verify the Deployment
 
