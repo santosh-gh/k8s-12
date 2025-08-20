@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "store-front.fullname" . }}-store-front
+  labels:
+  {{- include "store-front.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.storeFront.replicas }}
+  selector:
+    matchLabels:
+      app: store-front
+    {{- include "store-front.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: store-front
+      {{- include "store-front.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.storeFront.storeFront.image.repository }}:{{ .Values.storeFront.storeFront.image.tag
+          | default .Chart.AppVersion }}
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: store-front
+        ports:
+        - containerPort: 8080
+          name: store-front
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        resources: {{- toYaml .Values.storeFront.storeFront.resources | nindent 10 }}
+        startupProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      nodeSelector: {{- toYaml .Values.storeFront.nodeSelector | nindent 8 }}

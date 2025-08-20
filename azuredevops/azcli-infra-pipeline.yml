@@ -1,0 +1,53 @@
+trigger:
+  paths:
+    include:
+      - infra/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: 'k8s-dev'
+- name: scriptPath
+  value: 'infra/azcli/script.sh'
+- name: artifactName 
+  value: 'deployment-scripts'
+
+stages:
+- stage: PublishScript  # Stage 1 - Publish the script
+  displayName: 'Publish Script'
+  jobs:
+  - job: Publish
+    displayName: 'Publish Script as Artifact'
+    steps:
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(scriptPath)'
+        artifact: '$(artifactName)'
+        publishLocation: 'pipeline'
+
+- stage: Deploy # Stage 2 - Deploy the resources 
+  displayName: 'Deploy Resources'
+  dependsOn: PublishScript
+  jobs:
+    - deployment: DeployInfraResources
+      displayName: "Deploy Resources for: $(environment)"
+      environment: $(environment)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - download: current
+                artifact: $(artifactName)
+
+              - script: |
+                  echo "Workspace Directory: $(Pipeline.Workspace)"
+                  ls -R "$(Pipeline.Workspace)"
+
+              - task: AzureCLI@2
+                displayName: 'Run Deployment Script'
+                inputs:
+                  azureSubscription: '$(serviceConnection)'
+                  scriptType: bash
+                  scriptLocation: scriptPath
+                  scriptPath: '$(Pipeline.Workspace)/$(artifactName)/script.sh'

@@ -1,0 +1,20 @@
+kubernetesClusterDomain: cluster.local
+storeFront:
+  nodeSelector:
+    kubernetes.io/os: linux
+  ports:
+  - port: 80
+    targetPort: 8080
+  replicas: 3
+  storeFront:
+    image:
+      repository: acronlinestoredevuksouth001.azurecr.io/store-front
+      tag: v1
+    resources:
+      limits:
+        cpu: "1"
+        memory: 512Mi
+      requests:
+        cpu: 1m
+        memory: 200Mi
+  type: LoadBalancer

@@ -1,0 +1,83 @@
+trigger:
+  paths:
+    include:
+      - app/store-front/**
+      
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: k8s-common  
+  - name: serviceName 
+    value: 'rabbitmq'
+  - name: artifactName 
+    value: 'storehelmchart'
+  - name: imageTag
+    value: '3.13'
+
+stages:
+  - stage: Publish
+    displayName: Publish Manifest
+    jobs:
+      - job: PublishManifest
+        displayName: Publish Manifest
+        steps:          
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Manifest
+            inputs:
+              targetPath: "$(Build.SourcesDirectory)/$(artifactName)"
+              artifact: $(artifactName)
+
+  - stage: Dev_Deploy
+    displayName: Deploy to AKS Dev
+    dependsOn: Publish
+    variables:
+      - group: 'k8s-dev'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: dev
+            namespace: $(namespace)
+            imageTag: $(imageTag)
+
+  - stage: Test_Deploy
+    displayName: Deploy to AKS Test
+    dependsOn: Dev_Deploy
+    variables:
+      - group: 'k8s-test'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: test
+            namespace: $(namespace)
+            imageTag: $(imageTag)
+
+  - stage: Prod_Deploy
+    displayName: Deploy to AKS Prod
+    dependsOn: Test_Deploy
+    variables:
+      - group: 'k8s-prod'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: prod
+            namespace: $(namespace)
+            imageTag: $(imageTag)

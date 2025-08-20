@@ -1,0 +1,23 @@
+kubernetesClusterDomain: cluster.local
+productService:
+  nodeSelector:
+    kubernetes.io/os: linux
+  ports:
+  - name: http
+    port: 3002
+    targetPort: 3002
+  productService:
+    env:
+      aiServiceUrl: http://ai-service:5001/
+    image:
+      repository: acronlinestoredevuksouth001.azurecr.io/product
+      tag: v1
+    resources:
+      limits:
+        cpu: 2m
+        memory: 20Mi
+      requests:
+        cpu: 1m
+        memory: 1Mi
+  replicas: 1
+  type: ClusterIP

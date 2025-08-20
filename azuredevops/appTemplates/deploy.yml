@@ -1,0 +1,85 @@
+parameters:
+- name: "serviceName"
+  type: string
+- name: "acrName"
+  type: string
+- name: "aksCluster"
+  type: string
+- name: "aksResourceGroup"
+  type: string
+- name: "serviceConnection"
+  type: string
+- name: "namespace"
+  type: string
+- name: "environment"
+  type: string
+- name: "artifactName"
+  type: string
+- name: "imageTag"
+  type: string
+  default: 'latest'
+
+jobs:
+  - deployment: DeployToAKS
+    displayName: "Deploy Resources to AKS"
+    environment: ${{parameters.environment}}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: DownloadPipelineArtifact@2
+              displayName: 'Download Artifact'
+              inputs:
+                artifact: ${{parameters.artifactName}}
+                path: "$(Pipeline.Workspace)/${{parameters.artifactName}}"
+
+            - task: AzureCLI@2
+              inputs:
+                azureSubscription: ${{parameters.serviceConnection}}
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |     
+                 
+                  echo "Login to AKS"
+                  az aks get-credentials --name  ${{parameters.aksCluster}} --resource-group ${{parameters.aksResourceGroup}} --overwrite-existing       
+
+                  if [ "${{parameters.serviceName}}" != "config" ]; then                   
+                     
+                      echo "Updating deployment files with image tags..."
+                      sed -i "s|acronlinestoredevuksouth001.azurecr.io/${{parameters.serviceName}}|${{parameters.acrName}}.azurecr.io/${{parameters.serviceName}}:${{parameters.imageTag}}|g"  $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml                  
+                      cat $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml
+                   
+                  else
+
+                    echo "Skipping image tag update for service 'config'"
+
+                  fi
+                  
+            - script: |
+                  echo "Workspace Directory: $(Pipeline.Workspace)"
+                  ls -R "$(Pipeline.Workspace)"
+              displayName: Workspace Directory
+
+
+            - task: AzureCLI@2
+              displayName: Deploy using Kustomize
+              inputs:
+                azureSubscription: ${{parameters.serviceConnection}}
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |     
+                 
+                  echo "Login to AKS"
+                  az aks get-credentials --name  ${{parameters.aksCluster}} --resource-group ${{parameters.aksResourceGroup}} --overwrite-existing
+
+                  if [ "${{parameters.serviceName}}" != "config" ]; then
+
+                    kubectl kustomize $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/overlays/${{parameters.environment}} 
+                    kubectl apply -k $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/overlays/${{parameters.environment}} -n ${{parameters.namespace}}
+                  
+                  else
+
+                    kubectl kustomize $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/
+                    kubectl apply -k $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/ -n ${{parameters.namespace}}
+                  
+                  fi

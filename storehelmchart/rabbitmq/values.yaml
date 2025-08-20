@@ -1,0 +1,27 @@
+kubernetesClusterDomain: cluster.local
+rabbitmq:
+  nodeSelector:
+    kubernetes.io/os: linux
+  ports:
+  - name: rabbitmq-amqp
+    port: 5672
+    targetPort: 5672
+  - name: rabbitmq-http
+    port: 15672
+    targetPort: 15672
+  rabbitmq:
+    env:
+      rabbitmqDefaultPass: password
+      rabbitmqDefaultUser: username
+    image:
+      repository: mcr.microsoft.com/azurelinux/base/rabbitmq-server
+      tag: "3.13"
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 10m
+        memory: 128Mi
+  replicas: 1
+  type: ClusterIP

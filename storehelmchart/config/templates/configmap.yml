@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  rabbitmq_enabled_plugins: {{ .Values.rabbitmqEnabledPlugins.rabbitmqEnabledPlugins
+    | toYaml | indent 1 }}
+kind: ConfigMap
+metadata:
+  name: rabbitmq-enabled-plugins

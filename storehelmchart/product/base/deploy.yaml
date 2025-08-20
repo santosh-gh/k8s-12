@@ -1,0 +1,73 @@
+---
+# Source: product/templates/product-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3002
+      targetPort: 3002
+  selector:
+    app: product-service
+---
+# Source: product/templates/product-deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-name-product-product-service
+  labels:
+    helm.sh/chart: product-0.1.0
+    app.kubernetes.io/name: product
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+      app.kubernetes.io/name: product
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        app: product-service
+        app.kubernetes.io/name: product
+        app.kubernetes.io/instance: release-name
+    spec:
+      containers:
+      - env:
+        - name: AI_SERVICE_URL
+          value: "http://ai-service:5001/"
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: "cluster.local"
+        image: acronlinestoredevuksouth001.azurecr.io/product
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: product-service
+        ports:
+        - containerPort: 3002
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 2m
+            memory: 20Mi
+          requests:
+            cpu: 1m
+            memory: 1Mi
+      nodeSelector:
+        kubernetes.io/os: linux

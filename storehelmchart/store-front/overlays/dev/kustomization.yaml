@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+patches:
+- path: dev-values.yaml
+  target:
+    kind: Deployment

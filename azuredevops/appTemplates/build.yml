@@ -1,0 +1,25 @@
+parameters:
+- name: "acrServiceConnection"
+  type: string
+- name: "imageName"
+  type: string
+- name: "dockerFilePath"
+  type: string
+- name: "tag"
+  type: string
+
+steps:  
+  - task: DockerInstaller@0
+    displayName: Install Docker
+    inputs:
+      dockerVersion: '17.09.0-ce'
+      
+  - task: Docker@2
+    displayName: Build and publish ${{parameters.imageName}} to ACR
+    inputs:
+      command: buildAndPush
+      containerRegistry: ${{parameters.acrServiceConnection}}
+      repository: ${{parameters.imageName}}
+      Dockerfile: ${{parameters.dockerFilePath}}
+      tags: |
+        ${{parameters.tag}}

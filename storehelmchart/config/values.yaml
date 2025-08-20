@@ -1,0 +1,3 @@
+kubernetesClusterDomain: cluster.local
+rabbitmqEnabledPlugins:
+  rabbitmqEnabledPlugins: '[rabbitmq_management,rabbitmq_prometheus,rabbitmq_amqp1_0].'

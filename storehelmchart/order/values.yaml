@@ -1,0 +1,38 @@
+kubernetesClusterDomain: cluster.local
+orderService:
+  nodeSelector:
+    kubernetes.io/os: linux
+  orderService:
+    env:
+      fastifyAddress: 0.0.0.0
+      orderQueueHostname: rabbitmq
+      orderQueueName: orders
+      orderQueuePassword: password
+      orderQueuePort: "5672"
+      orderQueueUsername: username
+    image:
+      repository: acronlinestoredevuksouth001.azurecr.io/order
+      tag: v1
+    resources:
+      limits:
+        cpu: 75m
+        memory: 128Mi
+      requests:
+        cpu: 1m
+        memory: 50Mi
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  replicas: 1
+  type: ClusterIP
+  waitForRabbitmq:
+    image:
+      repository: busybox
+    resources:
+      limits:
+        cpu: 75m
+        memory: 128Mi
+      requests:
+        cpu: 1m
+        memory: 50Mi

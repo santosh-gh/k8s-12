@@ -1,0 +1,78 @@
+---
+# Source: store-front/templates/store-front-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-front
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app: store-front
+  type: LoadBalancer
+---
+# Source: store-front/templates/store-front-deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-name-store-front-store-front
+  labels:
+    helm.sh/chart: store-front-0.1.0
+    app.kubernetes.io/name: store-front
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: store-front
+      app.kubernetes.io/name: store-front
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        app: store-front
+        app.kubernetes.io/name: store-front
+        app.kubernetes.io/instance: release-name
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: "cluster.local"
+        image: acronlinestoredevuksouth001.azurecr.io/store-front
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: store-front
+        ports:
+        - containerPort: 8080
+          name: store-front
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        resources:
+          limits:
+            cpu: "1"
+            memory: 512Mi
+          requests:
+            cpu: 1m
+            memory: 200Mi
+        startupProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      nodeSelector:
+        kubernetes.io/os: linux

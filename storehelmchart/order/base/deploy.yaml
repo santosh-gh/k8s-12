@@ -1,0 +1,107 @@
+---
+# Source: order/templates/order-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  selector:
+    app: order-service
+---
+# Source: order/templates/order-deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-name-order-order-service
+  labels:
+    helm.sh/chart: order-0.1.0
+    app.kubernetes.io/name: order
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+      app.kubernetes.io/name: order
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        app: order-service
+        app.kubernetes.io/name: order
+        app.kubernetes.io/instance: release-name
+    spec:
+      containers:
+      - env:
+        - name: ORDER_QUEUE_HOSTNAME
+          value: "rabbitmq"
+        - name: ORDER_QUEUE_PORT
+          value: "5672"
+        - name: ORDER_QUEUE_USERNAME
+          value: "username"
+        - name: ORDER_QUEUE_PASSWORD
+          value: "password"
+        - name: ORDER_QUEUE_NAME
+          value: "orders"
+        - name: FASTIFY_ADDRESS
+          value: "0.0.0.0"
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: "cluster.local"
+        image: acronlinestoredevuksouth001.azurecr.io/order
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: order-service
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 75m
+            memory: 128Mi
+          requests:
+            cpu: 1m
+            memory: 50Mi
+        startupProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: "cluster.local"
+        image: busybox
+        name: wait-for-rabbitmq
+        resources:
+          limits:
+            cpu: 75m
+            memory: 128Mi
+          requests:
+            cpu: 1m
+            memory: 50Mi
+      nodeSelector:
+        kubernetes.io/os: linux

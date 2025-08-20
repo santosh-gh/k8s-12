@@ -1,0 +1,37 @@
+parameters:
+- name: "serviceconnection"
+  type: string
+- name: "environment"
+  type: string
+
+jobs:
+  - job: Build
+    displayName: "Build Template package"
+    steps:
+      - task: AzureCLI@2
+        displayName: "Validate Infra"
+        inputs:
+          azureSubscription: "${{parameters.serviceconnection}}"
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $filename = "$(System.DefaultWorkingDirectory)/infra/bicep/main.bicep"
+            $parametersfilename = "$(System.DefaultWorkingDirectory)/infra/bicep/main.bicepparam"
+            
+            $validationResult = az deployment sub validate --location uksouth --template-file $filename --parameters $parametersfilename --parameters environment=${{parameters.environment}}
+            if($validationResult.Contains("InvalidTemplate"))
+            {
+              throw $validationResult
+            }
+            Write-Output "Successfully validated $filename"
+      - task: CopyFiles@2
+        displayName: Infra Files to Build Artifacts
+        inputs:
+          SourceFolder: "$(System.DefaultWorkingDirectory)/infra"
+          Contents: |
+            /**
+          TargetFolder: "$(Build.ArtifactStagingDirectory)/infra"
+
+      - publish: $(Build.ArtifactStagingDirectory)
+        displayName: Publish Transformed artifacts
+        artifact: InfraPackage

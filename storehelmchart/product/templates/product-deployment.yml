@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "product.fullname" . }}-product-service
+  labels:
+  {{- include "product.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.productService.replicas }}
+  selector:
+    matchLabels:
+      app: product-service
+    {{- include "product.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: product-service
+      {{- include "product.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: AI_SERVICE_URL
+          value: {{ quote .Values.productService.productService.env.aiServiceUrl }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.productService.productService.image.repository }}:{{ .Values.productService.productService.image.tag
+          | default .Chart.AppVersion }}
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: product-service
+        ports:
+        - containerPort: 3002
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources: {{- toYaml .Values.productService.productService.resources | nindent
+          10 }}
+      nodeSelector: {{- toYaml .Values.productService.nodeSelector | nindent 8 }}

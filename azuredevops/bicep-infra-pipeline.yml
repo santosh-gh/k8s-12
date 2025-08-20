@@ -1,0 +1,29 @@
+# name: 1.0.$(BuildID)
+
+trigger:
+  paths:
+    include:
+      - infra/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:  
+  - group: 'k8s-dev'
+
+stages:
+  - stage: Build
+    displayName: "Infra Validatation"
+    jobs:
+      - template: infraTemplates/infravalidation.yml
+        parameters:
+          environment: $(environment)
+          serviceconnection: $(serviceConnection)
+
+  - stage: Dev
+    displayName: "Dev"
+    jobs:
+      - template: infraTemplates/deployresources.yml
+        parameters:
+          environment: $(environment)
+          serviceconnection: $(serviceConnection)

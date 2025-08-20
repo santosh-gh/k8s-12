@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+patches:
+- path: test-values.yaml
+  target:
+    kind: StatefulSet

@@ -1,0 +1,92 @@
+trigger:
+  paths:
+    include:
+      - app/order/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: k8s-common  
+  - name: serviceName 
+    value: 'order'
+  - name: artifactName 
+    value: 'storehelmchart'
+  - name: imageTag
+    value: $(Build.BuildId)
+  - name: imageName
+    value: 'order'
+
+stages:
+  - stage: Build
+    displayName: Docker Build and Push
+    jobs:
+      - job: BuildPublishDockerImages
+        displayName: Build nad push Docker Images
+        steps:
+          - template: appTemplates/build.yml
+            parameters:
+              acrServiceConnection: $(acrServiceConnection)
+              imageName: $(imageName)
+              dockerFilePath: '$(Build.sourcesdirectory)/app/order-service/Dockerfile'
+              tag: $(imageTag)
+          
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Manifest
+            inputs:
+              targetPath: "$(Build.SourcesDirectory)/$(artifactName)"
+              artifact: $(artifactName)
+  
+  - stage: Dev_Deploy
+    displayName: Deploy to AKS Dev
+    dependsOn: Build
+    variables:
+      - group: 'k8s-dev'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: dev
+            namespace: $(namespace)
+            imageTag: $(imageTag)
+
+  - stage: Test_Deploy
+    displayName: Deploy to AKS Test
+    dependsOn: Dev_Deploy
+    variables:
+      - group: 'k8s-test'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: test
+            namespace: $(namespace)
+            imageTag: $(imageTag)
+
+  - stage: Prod_Deploy
+    displayName: Deploy to AKS Prod
+    dependsOn: Test_Deploy
+    variables:
+      - group: 'k8s-prod'
+    jobs:
+      - template: appTemplates/deploy.yml
+        parameters:
+            artifactName: $(artifactName)
+            serviceName: $(serviceName)
+            acrName: $(acrName)
+            aksCluster: $(aksCluster)
+            aksResourceGroup: $(aksResourceGroup) 
+            serviceConnection: $(serviceConnection)
+            environment: prod
+            namespace: $(namespace)
+            imageTag: $(imageTag)

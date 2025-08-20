@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "order.fullname" . }}-order-service
+  labels:
+  {{- include "order.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.orderService.replicas }}
+  selector:
+    matchLabels:
+      app: order-service
+    {{- include "order.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: order-service
+      {{- include "order.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - env:
+        - name: ORDER_QUEUE_HOSTNAME
+          value: {{ quote .Values.orderService.orderService.env.orderQueueHostname }}
+        - name: ORDER_QUEUE_PORT
+          value: {{ quote .Values.orderService.orderService.env.orderQueuePort }}
+        - name: ORDER_QUEUE_USERNAME
+          value: {{ quote .Values.orderService.orderService.env.orderQueueUsername }}
+        - name: ORDER_QUEUE_PASSWORD
+          value: {{ quote .Values.orderService.orderService.env.orderQueuePassword }}
+        - name: ORDER_QUEUE_NAME
+          value: {{ quote .Values.orderService.orderService.env.orderQueueName }}
+        - name: FASTIFY_ADDRESS
+          value: {{ quote .Values.orderService.orderService.env.fastifyAddress }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.orderService.orderService.image.repository }}:{{ .Values.orderService.orderService.image.tag
+          | default .Chart.AppVersion }}
+        livenessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: order-service
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources: {{- toYaml .Values.orderService.orderService.resources | nindent 10
+          }}
+        startupProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: busybox
+        name: wait-for-rabbitmq
+        resources: {{- toYaml .Values.orderService.waitForRabbitmq.resources | nindent
+          10 }}
+      nodeSelector: {{- toYaml .Values.orderService.nodeSelector | nindent 8 }}
