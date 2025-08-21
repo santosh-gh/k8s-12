@@ -44,23 +44,15 @@ jobs:
                   az aks get-credentials --name  ${{parameters.aksCluster}} --resource-group ${{parameters.aksResourceGroup}} --overwrite-existing       
 
                   if [ "${{parameters.serviceName}}" != "config" ]; then
-
-                      if [ "${{parameters.serviceName}}" != "rabbitmq" ]; then                   
-                     
-                          echo "Skipping image tag update for service 'rabbitmq'"                          
-                     
-                      else
-
-                        echo "Updating deployment files with image tags..."
-                        sed -i "s|acronlinestoredevuksouth001.azurecr.io/${{parameters.serviceName}}|${{parameters.acrName}}.azurecr.io/${{parameters.serviceName}}:${{parameters.imageTag}}|g"  $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml                  
-                        cat $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml
-
-                      fi
-                   
+                    if [ "${{parameters.serviceName}}" != "rabbitmq" ]; then                    
+                      echo "Updating deployment files with image tags..."
+                      sed -i "s|acronlinestoredevuksouth001.azurecr.io/${{parameters.serviceName}}|${{parameters.acrName}}.azurecr.io/${{parameters.serviceName}}:${{parameters.imageTag}}|g"  $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml                  
+                      cat $(Pipeline.Workspace)/${{parameters.artifactName}}/${{parameters.serviceName}}/base/deploy.yaml                                          
+                    else
+                      echo "Skipping image tag update for service 'rabbitmq'"
+                    fi                   
                   else
-
                     echo "Skipping image tag update for service 'config'"
-
                   fi
                   
             - script: |
