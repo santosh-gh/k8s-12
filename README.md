@@ -61,6 +61,7 @@
     YouTube: https://www.youtube.com/watch?v=ZNHoZ_b85DQ&t=342s
 
     Part12:  Manual Deployment (AzCLI + Docker + Helm + kustomize + kubectl)
+             Template First approach 
              Dynamically update the image tag in deploy.yaml         
              Deploy into multiple environments (dev, test, prod) using Azure Pipeline.
 
