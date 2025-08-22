@@ -1,4 +1,4 @@
-# Part 11: Deploying microservice applications in AKS using Helm Chart and Kustomize
+# Part 12: Deploying microservice applications in AKS using Helm Chart and Kustomize
 
     Part1:   Manual Deployment (AzCLI + Docker Desktop + kubectl)  
     GitHub:  https://github.com/santosh-gh/k8s-01
@@ -60,7 +60,7 @@
     GitHub:  https://github.com/santosh-gh/k8s-11
     YouTube: https://www.youtube.com/watch?v=ZNHoZ_b85DQ&t=342s
 
-    Part12:  Manual Deployment (AzCLI + Docker + Helm + kustomize + kubectl)
+    Part12:  Automated Deployment (AzCLI + Docker + Helm + kustomize + kubectl)
              Template First approach 
              Dynamically update the image tag in deploy.yaml         
              Deploy into multiple environments (dev, test, prod) using Azure Pipeline.
